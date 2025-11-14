@@ -1,0 +1,18 @@
+
+  /* 표 자체는 좌우 스크롤 허용 (이미 있으면 이 블록이 보강) */
+  #view-debtors #debtorTable{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #view-debtors #debtorTable > div{
+    min-width: 760px;
+  }
+  /* 모바일에서 합계표( sum-row ) 고정 해제하고 충분히 아래로 */
+  @media (max-width: 1000px){
+    #view-debtors #debtorTable{ margin-top: 40px !important; } /* 알림보드와 간격 넉넉히 */
+    #view-debtors #debtorTable .sum-row{
+      position: static !important;
+      top: auto !important;
+      margin-top: 16px; /* 표 헤더/목록 뒤쪽으로 살짝 간격 */
+    }
+  }

@@ -1,0 +1,23 @@
+
+  /* 모바일: 채무자관리(납기도래/미납) 바로 아래에 채무자 표가 자연스럽게 이어지도록 처리 */
+  @media (max-width: 1000px){
+    /* 경고판(납기도래/미납) 끝나고 여백 확보 */
+    #view-debtors #alertsWrap{ margin-bottom: 12px; }
+
+    /* 표 자체를 살짝 아래로(20px) 내리고 가로 스크롤 허용 */
+    #view-debtors #debtorTable{
+      margin-top: 20px !important;
+      overflow-x: auto !important;
+      overflow-y: visible !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* 표 내부 그리드를 넉넉한 폭으로 고정 → 가로 스크롤 트리거 */
+    #view-debtors #debtorTable > div{ min-width: 760px; }
+
+    /* 모바일에서 합계(고정행)는 겹침 방지를 위해 sticky 해제 */
+    #view-debtors #debtorTable .sum-row{
+      position: static !important;
+      top: auto !important;
+      z-index: auto !important;
+    }
+  }

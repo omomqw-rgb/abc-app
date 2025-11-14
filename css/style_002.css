@@ -1,0 +1,35 @@
+
+#authModal.modal-backdrop{ z-index: 99990 !important; }
+#patchToast{ z-index: 99999 !important; }
+
+body[data-toast-pos="bottom"] #patchToast{ top:auto !important; bottom:12px !important; }
+body[data-toast-pos="top"] #patchToast{ top:12px !important; bottom:auto !important; }
+
+
+/* 합계 행 고정 */
+#debtorTable .sum-row{
+  position:sticky; top:0; z-index:2;
+  background: var(--panel);
+  border-bottom:1px solid var(--line);
+  font-weight:800; color:#eaf0ff;
+}
+/* 모바일 인라인 채무자 목록 */
+#mobileDebtorListWrap{ display:none; }
+@media (max-width: 860px){
+  #mobileDebtorListWrap{ display:block; max-height:42vh; overflow:auto; -webkit-overflow-scrolling:touch; }
+}
+
+/* 합계 행 고정 표시 */
+#debtorTable .sum-row{
+  position: sticky; top: 0; z-index: 2;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  font-weight: 800;
+  color: #eaf0ff;
+}
+
+/* 모바일에서 채무자 목록 인라인 */
+#mobileDebtorListWrap{ display:none; }
+@media (max-width: 860px){
+  #mobileDebtorListWrap{ display:block; max-height:42vh; overflow:auto; -webkit-overflow-scrolling:touch; }
+}

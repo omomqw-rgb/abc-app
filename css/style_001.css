@@ -1,0 +1,362 @@
+
+  :root{
+    --bg:#0f1115; --panel:#151821; --muted:#98a1b3; --text:#f3f6fb; --accent:#69b7ff;
+    --grid:#232736; --line:#2b3040; --btn:#243049; --btnh:#2e3b57;
+    --green:#2ecc71; --yellow:#ffd048; --red:#ff5252; --white:#ffffff;
+  }
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Noto Sans KR,Apple SD Gothic Neo,sans-serif}
+  .app{display:grid;grid-template-columns:260px 1.2fr 0.8fr;grid-template-rows:auto 1fr;grid-template-areas:"top top top" "side main drawer";height:100%}
+  .topbar{grid-area:top;display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:rgba(21,24,33,.7);backdrop-filter:blur(6px)}
+  .brand{font-weight:800;letter-spacing:.2px}
+  .tab{padding:8px 12px;border-radius:10px;background:transparent;border:1px solid var(--line);cursor:pointer;color:#e9eef7}
+  .tab:hover{background:#1e2536}
+  .tab.active{background:var(--btnh);border-color:#3a4869;color:#fff}
+  .spacer{flex:1}
+  .btn{padding:8px 12px;border-radius:10px;background:var(--btn);border:1px solid #3a4869;cursor:pointer;color:#eaf0ff}
+  .btn:hover{background:var(--btnh)}
+
+  /* 사이드바 */
+  .side{grid-area:side;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+  .side .head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .side .body{padding:10px;flex:1 1 auto;min-height:0;overflow:auto}
+  .debtor{padding:10px;border:1px solid var(--line);border-radius:12px;background:#121a2b;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer}
+  .debtor .meta{font-size:12px;color:#98a1b3}
+  .actions{display:flex;gap:6px}
+  .icon-btn{border:1px solid #38425b;background:#0f1726;color:#cfd8ea;border-radius:8px;padding:4px 6px;cursor:pointer;font-size:12px}
+  .icon-btn:hover{background:#16233b}
+
+  /* 메인 & 드로워 */
+  .main{grid-area:main;min-width:0;min-height:0;padding:14px}
+  .drawer{grid-area:drawer;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px}
+
+  /* 캘린더 */
+  .calendar{display:grid;gap:1px;background:var(--grid);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .cal-head{display:grid;grid-template-columns:repeat(7,1fr);background:#0d1018}
+  .cal-head div{padding:10px;text-align:center;font-weight:700;color:#c8d0e2;border-right:1px solid var(--grid)}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);background:var(--grid)}
+  .day{background:#0b0e15;min-height:118px;display:flex;flex-direction:column;border-right:1px solid var(--grid);border-top:1px solid var(--grid);position:relative}
+  .date{font-weight:700;font-size:12px;color:#c8d0e2;padding:8px}
+  .today{outline:2px solid var(--red);outline-offset:-2px;border-radius:6px}
+  .items{display:flex;flex-direction:column;gap:6px;padding:6px 6px 10px;overflow:auto}
+
+  /* 달력 배지 */
+  .pill{padding:6px 8px;border-radius:10px;border:1px solid #d6d8e1;background:var(--white);font-size:12px;display:flex;justify-content:space-between;gap:8px;cursor:pointer;color:#111}
+  .pill.upcoming{background:var(--white);color:#111;border-color:#d6d8e1}
+  .pill.paid{background:var(--green);color:#fff;border-color:#1fa85b}
+  .pill.partial{background:var(--yellow);color:#111;border-color:#e4b93d}
+  .pill.overdue{background:var(--red);color:#fff;border-color:#e04545}
+
+  .grid-tools{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  select,input{background:#10192b;color:#f0f5ff;border:1px solid #3a4869;border-radius:10px;padding:8px 10px;outline:none}
+  .note{color:#c2c9d9;font-size:12px}
+
+  /* KPI/리스트 */
+  .kpis{display:flex;flex-wrap:wrap;gap:8px;padding:12px;border-bottom:1px solid var(--line)}
+  .kpi{background:#111a2b;border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:12px}
+  .loan-list{padding:8px;overflow:auto}
+  .loan-card{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;background:#101826}
+  .loan-card h4{margin:0 0 6px 0}
+  .chip{display:inline-block;padding:2px 6px;border-radius:999px;border:1px solid var(--line);font-size:12px;margin-left:6px;color:#c8d0e2}
+
+  /* 오른쪽 스케줄 행 — 날짜 겹침 방지 + 금액 색상 + (행 글자색) */
+  .sched-row{
+    display:grid;
+    grid-template-columns:84px 150px 1fr 140px 130px; /* 회차|날짜|금액|상태|부분|수정 */
+    gap:8px; align-items:center; padding:8px;
+    border:1px dashed #2b3040; border-radius:10px; margin:6px 0;
+    color:var(--white); /* 기본: 미입금 = 흰색 */
+  }
+  .sched-row input[type="date"]{width:100%;min-width:140px}
+  .sched-row .amt{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sched-row .amt.paid{color:var(--green)}
+  .sched-row .amt.partial{color:#cfa53a}
+  .sched-row .amt.overdue{color:#ff7a7a}
+  .sched-row .amt.upcoming{color:#e2e6f3}
+  .sched-row.paid{color:var(--green)}
+  .sched-row.partial{color:var(--yellow)}
+  .sched-row.overdue{color:var(--red)}
+  .sched-row.upcoming{color:var(--white)}
+  .sched-row .status{min-width:130px}
+  .sched-row .save-btn{min-width:84px;display:none}
+
+  /* 채무상환 행 점프 하이라이트 */
+  .rp-row.flash{ outline:2px solid var(--accent); outline-offset:-2px; border-radius:10px; }
+@media (min-width: 1201px){
+  .sched-row{
+    grid-template-columns:84px 170px 1fr 130px 130px;
+  }
+}
+
+
+  /* 접기/펼치기 */
+  .sched-header{display:flex;align-items:center;gap:8px}
+  .collapse-btn{padding:4px 8px;border-radius:8px;background:#0f1726;border:1px solid #2b3040;color:#c8d0e2;cursor:pointer}
+  .collapse-btn:hover{background:#15203a}
+  .muted{color:#9aa4b8}
+
+  /* 채무자 관리 > 알림 보드 */
+  .alert-board{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .alert-section{background:#101826;border:1px solid var(--line);border-radius:12px;padding:10px}
+  .alert-section h4{margin:0 0 6px 0;display:flex;align-items:center;justify-content:space-between}
+  .alert-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+  .alert-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px dashed #2b3040;border-radius:10px;cursor:pointer}
+  .alert-item:hover{background:#0f1726}
+  .alert-left .name{font-weight:800}
+  .alert-left .meta{font-size:12px;color:#9aa4b8}
+  .amount-overdue{color:#ff7a7a;font-weight:800}
+  .amount-upcoming{color:#e2e6f3;font-weight:800}
+
+  /* 모달 */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:20;pointer-events:none}
+  .modal-backdrop[style*="display: flex"]{pointer-events:auto}
+  .modal{width:min(560px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;max-height:82vh;overflow:auto}
+  .row{display:grid;grid-template-columns:120px 1fr;gap:8px;align-items:center;margin:6px 0}
+
+  @media (max-width:1200px){
+  /* 1) 레이아웃 재배치: 상단 → 메인 → 드로워(스케줄) */
+  .app{
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "top"
+      "main"
+      "drawer";
+  }
+  /* 2) 사이드바는 모바일에서 숨김 */
+  .side{ display:none; }
+
+  /* 3) 메인(캘린더) 영역은 세로 스크롤 허용 */
+  .main{
+    overflow:auto;
+    -webkit-overflow-scrolling: touch; /* iOS 관성 스크롤 */
+    min-height: 0;
+  }
+
+  /* 4) 드로워(상환 스케줄) 영역을 메인 아래로 표시 + 자체 스크롤 */
+  .drawer{
+    display:block;            /* 기존 display:none을 해제 */
+    border-left:none;
+    border-top:1px solid var(--line);
+    max-height: 45vh;         /* 화면 절반 정도 높이로 */
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 5) 캘린더 칸 높이 살짝 축소(선택) */
+  .calendar .day{ min-height: 96px; }
+}
+/* ===== 모바일 가독성 & 가로 넘침 방지 ===== */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+/* 공통: 카드/그리드가 화면폭을 넘지 않게 */
+.card, .calendar, .cal-head, .cal-grid { max-width: 100%; }
+
+/* KPI(칩) 한 줄 넘칠 때 깨짐 방지 */
+.kpis { overflow: hidden; }
+.kpi  { min-width: 0; }
+
+/* 태블릿 ~ 모바일 */
+@media (max-width: 768px){
+  /* 상단바: 줄바꿈 허용 + 여백 축소 */
+  .topbar{ flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .topbar .btn, .tab{ padding: 6px 8px; font-size: 13px; }
+
+  /* 필터/월이동 영역도 줄바꿈 허용 */
+  .grid-tools{ flex-wrap: wrap; gap: 6px; }
+
+  /* 캘린더: 세로 여유 키우기 */
+  .calendar .day{ min-height: 132px; }  /* ← 이전보다 더 큼 */
+  .pill{ font-size: 12px; padding: 6px 8px; }
+
+  /* 드로워(상환 스케줄) — 화면 아래로 표시 + 자체 스크롤 */
+  .drawer{
+    display: block;           /* 모바일에서 보이도록 */
+    border-left: none;
+    border-top: 1px solid var(--line);
+    max-height: 50vh;         /* 화면 절반 정도 */
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 스케줄 행: 모바일 컬럼 폭 최적화 */
+  .loan-card{ padding: 8px; }
+  .sched-row{
+    grid-template-columns: 64px 120px 1fr 120px 110px; /* 회차|날짜|금액|상태|부분 */
+    gap: 6px;
+  }
+  .row{ grid-template-columns: 96px 1fr; }  /* 모달 라벨 폭 조정 */
+
+  /* 메인(캘린더)도 스크롤 허용 */
+  .main{
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+  }
+
+  /* 사이드바는 모바일에서 감춤 (이미 쓰고 있으면 유지) */
+  .side{ display: none; }
+}
+
+/* 작은 폰(아이폰 미니 등) — 캘린더 칸 더 키우기 & 버튼 글자 약간 축소 */
+@media (max-width: 420px){
+  .calendar .day{ min-height: 148px; }
+  .pill{ font-size: 11px; }
+  .tab, .btn{ font-size: 12px; padding: 6px 7px; }
+  .sched-row{
+    grid-template-columns: 58px 112px 1fr 110px 100px;
+  }
+}
+
+/* === 모바일 가독성 + 가로 스크롤(캘린더/채무자관리만) === */
+
+/* 공통: 화면 전체 가로 넘침은 막고 */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+/* 캘린더 컨테이너는 가로 스크롤 허용 */
+@media (max-width: 768px){
+  /* 툴바/버튼 압축 */
+  .topbar{ flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+  .btn, .tab{ padding: 6px 10px; font-size: 13px; }
+  .grid-tools{ flex-wrap: wrap; gap: 6px; }
+
+  /* 캘린더: 좌우 스크롤 + ‘줌아웃’ 효과 */
+  .calendar{
+    overflow-x: auto;               /* ← 가로 스크롤 허용 */
+    -webkit-overflow-scrolling: touch;
+  }
+  /* 7일이 모두 보이도록, 캘린더 내부 그리드를 '넉넉한 최소 너비'로 고정 */
+  .cal-head, .cal-grid{
+    min-width: 980px;               /* 필요시 920~1100px로 조절 */
+  }
+  /* 세로 칸 높이는 줄여서 더 많이 보이게(줌아웃 느낌) */
+  .calendar .day{ min-height: 104px; }    /* 더 작게 보려면 96px */
+  .pill{ font-size: 11px; padding: 4px 6px; }
+
+  /* 드로워(상환 스케줄)는 아래쪽에 표시 + 자체 스크롤 */
+  .drawer{
+    display:block; border-left:none; border-top:1px solid var(--line);
+    max-height: 48vh; overflow:auto; -webkit-overflow-scrolling:touch;
+  }
+
+  /* 채무자관리 표/알림 보드: 한 열로 정리 + 가로 스크롤 허용 */
+  .alert-board{ grid-template-columns: 1fr; }
+  #debtorTable{ overflow-x:auto; }
+  /* 표가 너무 붙지 않게 최소 너비를 지정 */
+  #debtorTable > div{ min-width: 760px; }
+
+  /* 스케줄 행도 모바일 폭에 맞게 간결화 */
+  .loan-card{ padding: 8px; }
+  .sched-row{
+    grid-template-columns: 64px 120px 1fr 120px 110px;  /* 회차|날짜|금액|상태|부분 */
+    gap: 6px;
+  }
+  .row{ grid-template-columns: 96px 1fr; } /* 모달 라벨/입력 폭 조정 */
+}
+
+/* 더 작은 폰(아이폰 미니 등)은 한 단계 더 ‘컴팩트’ */
+@media (max-width: 400px){
+  .cal-head, .cal-grid{ min-width: 1100px; }   /* 가로 스크롤로 7일 확보 */
+  .calendar .day{ min-height: 96px; }
+  .pill{ font-size: 10.5px; padding: 4px 5px; }
+  .btn, .tab{ font-size: 12px; padding: 6px 8px; }
+  .sched-row{
+    grid-template-columns: 58px 112px 1fr 110px 100px;
+  }
+}
+/* === MOBILE ONLY: fullscreen calendar, drawer hidden, strong zoom-out === */
+@media (max-width: 1000px){
+  :root{ --cal-scale: 0.58; } /* 0.55~0.65 사이에서 미세조정 가능 */
+
+  /* Grid: remove drawer row, main takes remaining height */
+  .app{
+    height:100vh;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "top"
+      "main";
+    grid-template-rows: auto 1fr; /* main이 남은 높이 전부 */
+  }
+
+  .side{ display:none !important; }
+  .drawer{ display:none !important; }  /* 이준호/수정/+대출 숨김 */
+
+  .main{ min-height:0; overflow:hidden; }
+
+  /* Calendar view fills main */
+  #view-calendar.card{ display:flex; flex-direction:column; height:100%; min-height:0; }
+  #view-calendar .calendar{ flex:1 1 auto; height:100%; min-height:0; overflow:auto; }
+
+  /* Strong zoom-out: scale header & grid */
+  .cal-head, .cal-grid{
+    transform: scale(var(--cal-scale));
+    transform-origin: top left;
+  }
+  .cal-grid{ grid-auto-rows: 1fr; min-height:0; }
+  .calendar .day{ min-height:0; padding: 2px; }
+  .cal-head{ height: 24px; }
+  .date{ font-size: 9px; padding: 2px; }
+  .pill{ font-size: 9px; padding: 2px 3px; gap: 2px; }
+
+  /* Debtor view: also fills height when 해당 탭일 때 */
+  #view-debtors.card{ display:flex; flex-direction:column; height:100%; min-height:0; }
+  #alertsWrap{ max-height: 22vh; overflow:auto; -webkit-overflow-scrolling:touch; }
+  #debtorTable{ flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch; }
+}
+
+/* ===== MOBILE (≤1000px): drawer = normal block under calendar; page scroll reveals it ===== */
+@media (max-width: 1000px){
+  :root{ --cal-scale: 0.52; } /* tweak 0.48~0.60 if needed */
+
+  /* 1) Page layout grows with content so body scroll works */
+  .app{
+    min-height:100vh !important;
+    height:auto !important;
+    grid-template-columns:1fr !important;
+    grid-template-areas:"top" "main" "drawer" !important;
+    grid-template-rows:auto auto auto !important;   /* content-sized rows */
+  }
+  .side{ display:none !important; }
+
+  /* 2) Main should not trap scroll */
+  .main{ overflow:visible !important; min-height:0 !important; }
+
+  /* 3) Respect tab switching: never force hidden views to show */
+  #view-calendar[style*="display: none"]{ display:none !important; }
+  #view-debtors[style*="display: none"]{ display:none !important; }
+
+  /* 4) Calendar still looks full-screen-ish + strong zoom-out */
+  #view-calendar.card{ display:flex; flex-direction:column; min-height:0; }
+  #view-calendar .calendar{
+    min-height: calc(100vh - 170px) !important;   /* header/toolbar allowance */
+    overflow:hidden;
+  }
+  .cal-head, .cal-grid{ min-width:0 !important; max-width:none !important; }
+  .cal-head, .cal-grid{
+    transform: scale(var(--cal-scale));
+    transform-origin: top left;
+    width: calc(100% / var(--cal-scale));
+  }
+  .cal-head{ height: calc(30px / var(--cal-scale)); }
+  .cal-grid{ grid-auto-rows: 1fr; height: calc(100% / var(--cal-scale)); min-height:0; }
+  .calendar .day{ min-height:0; }
+  .date{ font-size:10px; padding:3px; }
+  .pill{ font-size:9px; padding:2px 3px; gap:3px; }
+
+  /* 5) Drawer behaves like a plain block under the calendar */
+  .drawer{
+    display:block !important;
+    position: static !important;
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+    border-left:none; border-top:1px solid var(--line);
+    margin-top: 12px;  /* small gap below calendar */
+    background: var(--bg);
+  }
+
+  /* 6) Debtor view layout when active */
+  #view-debtors.card{ height:auto; min-height:0; }
+  #alertsWrap{ max-height:22vh; overflow:auto; -webkit-overflow-scrolling:touch; }
+  #debtorTable{ max-height:none; overflow:visible; }
+}

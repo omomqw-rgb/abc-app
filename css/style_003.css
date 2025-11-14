@@ -1,0 +1,12 @@
+
+  /* 채무자관리 탭의 표만 아래로 내리고 좌우 스크롤 가능하게 */
+  #view-debtors #debtorTable{
+    margin-top: 20px !important;
+    overflow-x: auto !important;   /* 가로 스크롤 */
+    overflow-y: visible;           /* 세로는 기본 흐름 유지 */
+    -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+  }
+  /* 각 행/헤더를 한 줄 폭으로 넉넉하게 잡아 가로 스크롤 트리거 */
+  #view-debtors #debtorTable > div{
+    min-width: 760px;
+  }

@@ -1,0 +1,27 @@
+
+/* 목표: 모바일에서 '채무자 관리(납기도래/미납)' 블록 아래에 채무자 목록 표가 자연스럽게 이어지게 하고,
+         표는 좌우 스크롤이 가능하게, 합계표는 화면 상단에 들러붙지 않도록 처리 */
+@media (max-width: 1000px){
+  /* 알림 보드(납기도래/미납)가 내용만큼 늘어나도록 */
+  #alertsWrap{ max-height: none !important; overflow: visible !important; }
+  /* 각 리스트도 더 이상 내부 스크롤로 제한하지 않음 */
+  .alert-list{ max-height: none !important; overflow: visible !important; }
+
+  /* 채무자 표: 알림 보드 아래로 여백을 두고 가로 스크롤 허용 */
+  #view-debtors #debtorTable{
+    margin-top: 20px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  #view-debtors #debtorTable > div{ min-width: 760px; }
+
+  /* 합계 행이 상단에 들러붙거나 겹치지 않도록 모바일에선 숨김 */
+  #view-debtors #debtorTable .sum-row{
+    position: static !important;
+    display: none !important;
+  }
+}
+/* 작은 화면에선 알림 보드를 한 열로 */
+@media (max-width: 768px){
+  .alert-board{ grid-template-columns: 1fr !important; }
+}
