@@ -208,13 +208,34 @@ function delDebtor
 }
 
 /* ===== 오른쪽 드로워 ===== */
+
 function aggByDebtor(id){
-  const loans=state.loans.filter(l=>l.debtorId===id);
-  const total=loans.reduce((s,l)=>s+l.total,0);
-  const paid=loans.reduce((s,l)=>s+l.schedule.reduce((ss,it)=>ss+(it.paid||0),0),0);
-  const remain=Math.max(0,total-paid);
-  return {loans,total,paid,remain};
+  const loans = (state.loans || []).filter(l => String(l.debtorId) === String(id));
+  const plans = (state.repayPlans || []).filter(p => String(p.debtorId) === String(id));
+
+  // 대출 합계
+  const loanTotal = loans.reduce((s,l)=> s + Math.max(0, Number(l.total)||0), 0);
+  const loanPaid  = loans.reduce((s,l)=> s + (Array.isArray(l.schedule) ? l.schedule.reduce((ss,it)=> ss + Math.max(0, Number(it.paid)||0), 0) : 0), 0);
+
+  // 채권(RepayPlan) 합계 — settled 금액만 paid 로 인정
+  const claimTotal = plans.reduce((s,p)=> s + Math.max(0, Number(p.total)||0), 0);
+  const claimPaid  = plans.reduce((s,p)=> {
+    if(!p || !Array.isArray(p.schedule)) return s;
+    const pp = p.schedule.reduce((ss,it)=>{
+      if(!it) return ss;
+      const amt = Math.max(0, Number(it.amount)||0);
+      return ss + (it.settled ? amt : 0);
+    },0);
+    return s + pp;
+  }, 0);
+
+  const total = loanTotal + claimTotal;
+  const paid  = loanPaid + claimPaid;
+  const remain = Math.max(0, total - paid);
+
+  return { loans, repayPlans: plans, total, paid, remain };
 }
+
 function openDrawer(id){
   state.ui.selectedDebtorId=id; save();
   const d=state.debtors.find(x=>x.id===id); if(!d) return;
@@ -227,9 +248,17 @@ function openDrawer(id){
     <div class="kpi">${d.note?('📝 '+d.note):'📝 메모 없음'}</div>`;
 
   const list=document.getElementById('drawerLoans'); list.innerHTML='';
-  if(a.loans.length===0){ list.innerHTML='<div class="note" style="padding:8px">대출이 없습니다.</div>'; return; }
+  const loans = Array.isArray(a.loans) ? a.loans : [];
+  const hasRepay = Array.isArray(a.repayPlans) && a.repayPlans.length>0;
 
-  // 정렬: 미완 먼저, 시작일 최신순
+  // 대출도 없고 채권도 없으면 안내만 표시
+  if(loans.length===0 && !hasRepay){
+    list.innerHTML='<div class="note" style="padding:8px">대출이 없습니다.</div>';
+    return;
+  }
+
+  // 대출이 없는 경우에도 채권카드는 renderRepayCards에서 붙으므로 여기서 바로 return 하지 않음.
+// 정렬: 미완 먼저, 시작일 최신순
   const loansSorted = a.loans.slice().sort((A,B)=>{
     const aDone = allPaid(A), bDone = allPaid(B);
     if(aDone!==bDone) return aDone - bDone; // 미완(0) 우선
