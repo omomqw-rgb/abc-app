@@ -42,10 +42,39 @@ function load(){
       return { id:l.id||uid(), debtorId:l.debtorId, total, count, installment, startDate:l.startDate, freq:l.freq||'weekly', schedule, completed: !!l.completed };
     }) : [];
 
-state.repayPlans = Array.isArray(data.repayPlans) ? data.repayPlans.map(function(p){
-  var sc = Array.isArray(p.schedule) ? p.schedule.map(function(it,i){
-    return { idx: (it && Number(it.idx)>0)? Number(it.idx) : (i+1), date: String(it.date||''), amount: (it.amount===''||it.amount==null)? '' : Math.max(0, Number(it.amount)||0), missed: !!it.missed, settled: !!it.settled };
-  }) : [];
+
+state.repayPlans = Array.isArray(data.repayPlans) ? (function(rawPlans){
+  // 기본 매핑
+  var mapped = rawPlans.map(function(p){
+    var sc = Array.isArray(p.schedule) ? p.schedule.map(function(it,i){
+      if(!it) return null;
+      return {
+        idx: (it && Number(it.idx)>0)? Number(it.idx) : (i+1),
+        date: String(it.date||'').trim(),
+        amount: (it.amount===''||it.amount==null)? '' : Math.max(0, Number(it.amount)||0),
+        paid: Math.max(0, Number(it.paid||0)),
+        missed: !!it.missed,
+        settled: !!it.settled
+      };
+    }).filter(function(it){ return it && it.date; }) : [];
+    return {
+      id: String(p.id||uid()),
+      debtorId: String(p.debtorId),
+      total: Math.max(0, Number(p.total)||0),
+      count: sc.length || Number(p.count)||0,
+      installment: sc.length ? Math.round((Math.max(0, Number(p.total)||0))/sc.length) : 0,
+      startDate: p.startDate || (sc[0] && sc[0].date) || '',
+      freq: p.freq || 'daily',
+      schedule: sc,
+      completed: !!p.completed
+    };
+  });
+
+  // 고아 plan 자동삭제: 존재하지 않는 채무자(debtorId) 연결된 항목 제거
+  var validIds = new Set((state.debtors || []).map(function(d){ return String(d.id); }));
+  return mapped.filter(function(p){ return validIds.has(String(p.debtorId)); });
+})(data.repayPlans) : [];
+
   return { id: String(p.id||uid()), debtorId: String(p.debtorId), total: Math.max(0, Number(p.total)||0), count: Number(p.count||sc.length||0), startDate: p.startDate || (sc[0] && sc[0].date) || '', freq: p.freq || 'daily', schedule: sc, completed: !!p.completed };
 }) : [];
         const ui=data.ui||{};
