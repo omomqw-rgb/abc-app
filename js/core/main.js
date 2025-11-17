@@ -147,9 +147,7 @@ function sanitizeState(raw){
         startDate: schedule[0].date,
         freq: l.freq || 'daily',
         schedule,
-        completed: !!l.completed,
-        principal: Math.max(0, Number(l.principal)||0),
-        rate: Number(l.rate)||0
+        completed: !!l.completed
       });
     });
   }catch(e){ console.warn('[sanitizeState] 실패', e); }

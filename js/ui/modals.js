@@ -36,21 +36,17 @@ function openLoanModal(fixedId){
   document.getElementById('loanDailyInterval').value=7;
   document.getElementById('loanWeekday').value=String(new Date().getDay());
   document.getElementById('optFirstPaid').checked=false;
-  document.getElementById('loanRate').value='';
   document.getElementById('saveLoan').dataset.editLoanId='';
   document.getElementById('previewLoan').textContent='';
   toggleFreqRows();
   openModal('#loanModal');
 }
-['loanTotal','loanCount','loanStart','loanFreq','optFirstPaid','loanDailyInterval','loanWeekday','loanRate'].forEach(id=>{
-  const el=document.getElementById(id); if(!el) return;
-  el.addEventListener('input', ()=>{
+['loanTotal','loanCount','loanStart','loanFreq','optFirstPaid','loanDailyInterval','loanWeekday'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{
     toggleFreqRows();
     const total=Number(document.getElementById('loanTotal').value||0);
     const count=Math.max(1, Number(document.getElementById('loanCount').value||10));
     const start=document.getElementById('loanStart').value;
-    const rate=Number(document.getElementById('loanRate').value||0);
-    const firstPaid=document.getElementById('optFirstPaid').checked;
     if(total>0 && start){
       const base=Math.round(total/count);
       const freqLabel = ({
@@ -58,27 +54,8 @@ function openLoanModal(fixedId){
         weekly:`주간격(요일 ${'일월화수목금토'[Number(document.getElementById('loanWeekday').value||0)]})`,
         month_end:'월말'
       })[document.getElementById('loanFreq').value] || '주기';
-      let principal=0;
-      if(rate>0){
-        const r=rate/100;
-        const basePrincipal=Math.round(total/(1+r));
-        const interestPart=total-basePrincipal;
-        if(firstPaid){
-          principal=total-interestPart-base;
-        }else{
-          principal=basePrincipal;
-        }
-      }else{
-        principal=total;
-      }
-      const principalLabel = principal>0 ? ` · 실투 <b>${KRW(principal)}</b>` : '';
-      const firstPaidLabel = firstPaid ? ' · 1회차 즉시완납' : '';
-      document.getElementById('previewLoan').innerHTML =
-        `총상환 <b>${KRW(total)}</b> · 회차 <b>${KRW(base)}</b> × ${count} · ${freqLabel}` +
-        principalLabel + firstPaidLabel;
-    }else{
-      document.getElementById('previewLoan').textContent='';
-    }
+      document.getElementById('previewLoan').innerHTML = `총상환 <b>${KRW(total)}</b> · 회차 <b>${KRW(base)}</b> × ${count} · ${freqLabel}` + (document.getElementById('optFirstPaid').checked? ' · 1회차 즉시완납':'' );
+    }else document.getElementById('previewLoan').textContent='';
   });
 });
 function toggleFreqRows(){
@@ -93,33 +70,17 @@ function saveLoan(){
   const start=document.getElementById('loanStart').value;
   const freq=document.getElementById('loanFreq').value;
   const firstPaid=document.getElementById('optFirstPaid').checked;
-  const rate=Number(document.getElementById('loanRate').value||0);
   const opts = { dailyInterval: Number(document.getElementById('loanDailyInterval').value||1), weekday: Number(document.getElementById('loanWeekday').value||0) };
   if(!debtorId) return toast('채무자를 선택하세요.');
   if(!(total>0)) return toast('총상환금액을 입력하세요.');
   if(!start) return toast('시작일을 선택하세요.');
   const s=makeSchedule(total,count,start,freq,firstPaid,opts);
-  // 실투(실제 지급액) 계산
-  let principal=0;
-  if(rate>0){
-    const r=rate/100;
-    const basePrincipal=Math.round(total/(1+r));
-    const interestPart=total-basePrincipal;
-    const baseInstallment=Math.round(total/count);
-    if(firstPaid){
-      principal=total-interestPart-baseInstallment;
-    }else{
-      principal=basePrincipal;
-    }
-  }else{
-    principal=total;
-  }
   const editId=document.getElementById('saveLoan').dataset.editLoanId;
   if(editId){
     const l=state.loans.find(x=>x.id===editId);
-    Object.assign(l,{debtorId,total,count,installment:s.installment,startDate:start,freq,schedule:s.schedule,rate,principal});
+    Object.assign(l,{debtorId,total,count,installment:s.installment,startDate:start,freq,schedule:s.schedule});
   }else{
-    state.loans.unshift({id:uid(), debtorId,total,count,installment:s.installment,startDate:start,freq,schedule:s.schedule,rate,principal});
+    state.loans.unshift({id:uid(), debtorId,total,count,installment:s.installment,startDate:start,freq,schedule:s.schedule});
   }
   closeModal('#loanModal'); refreshKeepDrawer();
 }
@@ -134,13 +95,9 @@ function editLoan(id){
   let freqVal = l.freq || 'daily'; if(freqVal==='monthly') freqVal='month_end';
   document.getElementById('loanFreq').value=freqVal;
   document.getElementById('optFirstPaid').checked = (l.schedule?.[0]?.paid||0) >= (l.schedule?.[0]?.amount||Infinity);
-  document.getElementById('loanRate').value = (typeof l.rate==='number' && !isNaN(l.rate)) ? l.rate : '';
   document.getElementById('saveLoan').dataset.editLoanId=l.id;
   toggleFreqRows();
-  const principalLabel = l.principal ? ` · 실투 <b>${KRW(l.principal)}</b>` : '';
-  document.getElementById('previewLoan').innerHTML=
-    `총상환 <b>${KRW(l.total)}</b> · 회차 <b>${KRW(l.installment)}</b> × ${l.count}` +
-    principalLabel;
+  document.getElementById('previewLoan').innerHTML=`총상환 <b>${KRW(l.total)}</b> · 회차 <b>${KRW(l.installment)}</b> × ${l.count}`;
   openModal('#loanModal');
 }
 function delLoan(id){
