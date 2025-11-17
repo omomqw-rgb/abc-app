@@ -318,6 +318,11 @@ function openDrawer(id){
     card.innerHTML = headerHtml + `<div class="sched-wrap" id="sched-${l.id}" style="display:${collapsed?'none':'block'}">${schedRows}</div>`;
     list.appendChild(card);
   });
+  // 채무상환(RepayPlan) 카드 렌더링
+  if (typeof window.renderRepayCards === 'function') {
+    try { window.renderRepayCards(id); } catch(e) { console.warn('[renderRepayCards]', e); }
+  }
+
 }
 
 /* ===== 채무자 표 ===== */
@@ -552,6 +557,37 @@ function buildCalendar(year,month){
       pill.innerHTML=`<span class="who">${x.who}</span><span class="amt">${KRW(remain)}</span>`;
       items.appendChild(pill);
     });
+
+    // RepayPlan(채권) pill overlay
+    const repayDues = [];
+    (state.repayPlans || []).forEach(p=>{
+      if(p && p.completed) return;
+      const sc = Array.isArray(p && p.schedule) ? p.schedule : [];
+      sc.forEach(it=>{
+        if(!it || !it.date) return;
+        if(it.date !== yyyyMmDd) return;
+        const debtor = (state.debtors || []).find(d=> String(d.id) === String(p.debtorId));
+        const who = debtor ? debtor.name : '채무자';
+        const amt = Math.max(0, Number(it.amount) || 0);
+        const settled = !!it.settled;
+        const overdue = (!settled && (it.missed || (new Date(it.date) < today)));
+        const cls = settled ? 'paid' : (overdue ? 'overdue' : 'upcoming');
+        const toRecv = settled ? 0 : amt;
+        repayDues.push({ plan:p, it, who, amt, settled, overdue, cls, toRecv });
+      });
+    });
+    repayDues.sort((a,b)=> a.who.localeCompare(b.who,'ko'));
+
+    repayDues.forEach(x=>{
+      const pill = document.createElement('div');
+      pill.className = 'pill ' + x.cls;
+      pill.dataset.planId = x.plan.id;
+      pill.dataset.rpIdx = x.it.idx;
+      pill.title = `[상환] 회차금액 ${KRW(x.amt)} · 상태 ` + (x.settled ? '완납' : (x.overdue ? '미납' : '미입금'));
+      pill.innerHTML = `<span class="who">${x.who}</span><span class="amt">${KRW(x.toRecv)}</span>`;
+      items.appendChild(pill);
+    });
+
 
     cell.appendChild(dateDiv); cell.appendChild(items); grid.appendChild(cell);
   }

@@ -256,16 +256,9 @@ document.addEventListener('click', function(e){
   }catch(e){ console.warn('[renderRepayCards] skip', e); }
 }
 
-    if(typeof window.openDrawer==='function'){
-      var __openDrawer = window.openDrawer;
-      window.openDrawer = function(id){
-        __openDrawer(id);
-        try{
-          var k=document.getElementById('drawerKpis'); if(k) k.innerHTML = k.innerHTML.replace('총상환 합계','총상환채무');
-        }catch(_){}
-        renderRepayCards(id);
-      };
-    }
+    // expose for core drawer
+    window.renderRepayCards = renderRepayCards;
+
 
     document.addEventListener('focusout', function(e){
       var row=e.target && e.target.closest('.rp-row'); if(!row) return;
@@ -305,45 +298,8 @@ document.addEventListener('click', function(e){
       }
     });
 
-    // calendar overlay for repay pills + click open
-    if(typeof window.buildCalendar==='function'){
-      var __build = window.buildCalendar;
-      window.buildCalendar = function(year, month){
-        __build(year, month);
-        try{
-          var grid=document.getElementById('calGrid'); if(!grid) return;
-          var today=RP_today();
-          var cells = Array.prototype.slice.call(grid.querySelectorAll('.day'));
-          var y=Number(document.getElementById('yearSel').value);
-          var m=Number(document.getElementById('monthSel').value);
-          function cellFor(ymd){
-            var dt=new Date(ymd+'T00:00:00'); if(dt.getFullYear()!==y || dt.getMonth()!==m) return null;
-            var d=dt.getDate();
-            for(var i=0;i<cells.length;i++){ var lab=cells[i].querySelector('.date'); if(!lab) continue; if(String(lab.textContent).trim()===String(d)) return cells[i]; }
-            return null;
-          }
-          (state.repayPlans||[]).forEach(function(p){
-            if(p.completed) return;
-            (p.schedule||[]).forEach(function(it){
-              var cell=cellFor(it.date); if(!cell) return;
-              var items=cell.querySelector('.items'); if(!items) return;
-              var debtor=(state.debtors||[]).find(function(d){ return String(d.id)===String(p.debtorId); });
-              var who=debtor ? debtor.name : '채무자';
-              var amt = (it.amount===''||it.amount==null)?0:Number(it.amount||0);
-              var settled = !!it.settled;
-              var overdue = (!settled && (it.missed || (new Date(it.date) < today)));
-              var cls = settled ? 'paid' : (overdue ? 'overdue' : 'upcoming');
-              var toRecv = settled ? 0 : amt;
-              var pill=document.createElement('div'); pill.className='pill '+cls;
-              pill.dataset.planId=p.id; pill.dataset.rpIdx=it.idx;
-              pill.title='[상환] 회차금액 '+RP_KRW(amt)+' · 상태 '+(settled?'완납':(overdue?'미납':'미입금'));
-              pill.innerHTML='<span class="who">'+who+'</span><span class="amt">'+RP_KRW(toRecv)+'</span>';
-              items.appendChild(pill);
-            });
-          });
-        }catch(e){ console.warn('[rp calendar]', e); }
-      };
 
+    // click: open repay modal when pill is clicked
       document.addEventListener('click', function(e){
   var pill = e.target && e.target.closest('.pill[data-plan-id]'); if(!pill) return;
   e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
@@ -352,7 +308,6 @@ document.addEventListener('click', function(e){
   if(!plan) return;
   openRepayModal(plan.id, pill.dataset.rpIdx);
 }, true);
-    }
 
 
     // removed override of renderAlerts to preserve D-1/D-day + overdue layout
@@ -364,7 +319,27 @@ document.addEventListener('click', function(e){
   else if(ai.dataset.plan){ openRepayModal(ai.dataset.plan, (ai.dataset.rpidx||ai.dataset.idx)); }
 }, true);
 
-    document.addEventListener('DOMContentLoaded', function(){
+    
+    // core openDrawer 확장: 대출 카드 아래에 채무상환 카드도 함께 표시
+    if (typeof window.openDrawer === 'function') {
+      (function(){
+        var __openDrawer = window.openDrawer;
+        window.openDrawer = function(id){
+          try{
+            __openDrawer(id);
+          }catch(e){
+            console.warn('[RepayPlan] base openDrawer failed', e);
+          }
+          try{
+            renderRepayCards(id);
+          }catch(e){
+            console.warn('[RepayPlan] renderRepayCards failed', e);
+          }
+        };
+      })();
+    }
+
+document.addEventListener('DOMContentLoaded', function(){
       injectRepayButtons();
       if(state.ui && state.ui.selectedDebtorId) openDrawer(state.ui.selectedDebtorId);
     });
