@@ -57,14 +57,31 @@ document.addEventListener('click', function(e){
       var __sanitize = window.sanitizeState;
       window.sanitizeState = function(raw){
         var out = __sanitize(raw);
+
         try{
-          out.repayPlans = Array.isArray(raw && raw.repayPlans) ? raw.repayPlans.map(function(p){
-            var sc = Array.isArray(p.schedule)? p.schedule.map(function(it,i){
-              return { idx:Number(it.idx||i+1), date:String(it.date||''), amount:(it.amount===''||it.amount==null)?'':Math.max(0, Number(it.amount||0)), missed:!!it.missed, settled:!!it.settled };
-            }):[];
-            return { id:String(p.id||Math.random().toString(36).slice(2,10)), debtorId:String(p.debtorId), total:Math.max(0,Number(p.total||0)),
-                     count: Number(p.count||sc.length||0), startDate: p.startDate || (sc[0] && sc[0].date) || '', freq:p.freq||'daily', schedule:sc, completed:!!p.completed };
-          }) : [];
+          if (Array.isArray(raw && raw.repayPlans)) {
+            out.repayPlans = raw.repayPlans.map(function(p){
+              var sc = Array.isArray(p.schedule) ? p.schedule.map(function(it,i){
+                return {
+                  idx: (it && Number(it.idx) > 0) ? Number(it.idx) : (i+1),
+                  date: String((it && (it.date || it.ymd || it.dueDate || it.due_ymd)) || '').trim(),
+                  amount: Math.max(0, Number(it && it.amount || 0)),
+                  missed: !!(it && it.missed),
+                  settled: !!(it && it.settled)
+                };
+              }).filter(function(it){ return it && it.date; }) : [];
+              return {
+                id: String(p.id || Math.random().toString(36).slice(2,10)),
+                debtorId: String(p.debtorId),
+                total: Math.max(0, Number(p.total || 0)),
+                count: Number(p.count || sc.length || 0),
+                startDate: p.startDate || (sc[0] && sc[0].date) || '',
+                freq: p.freq || 'daily',
+                schedule: sc,
+                completed: !!p.completed
+              };
+            });
+          }
         }catch(e){ console.warn('[sanitize repays]', e); }
         return out;
       };

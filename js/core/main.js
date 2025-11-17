@@ -125,32 +125,45 @@ function sanitizeState(raw){
         dmap.set(nd.id, nd); out.debtors.push(nd);
       }
     });
+    
     (Array.isArray(raw && raw.loans ? raw.loans : []) ? raw.loans : []).forEach(l=>{
       if(!l || !dmap.has(String(l.debtorId))) return;
       let schedule = Array.isArray(l.schedule) ? l.schedule.slice() : [];
-      schedule = schedule.filter(it=>it && it.date).map((it,i)=>({
-        idx:i+1,
-        date:String(it.date),
-        amount:Math.max(0, Number(it.amount)||0),
-        paid:Math.max(0, Number(it.paid)||0),
-        missed:!!it.missed
-      }));
-      if(schedule.length===0) return;
-      const sum = schedule.reduce((s,it)=>s+(it.amount||0),0);
-      const count = schedule.length;
+
+      // 날짜 필드 호환 처리: date / ymd / dueDate / due_ymd 등을 모두 허용
+      schedule = schedule.map((it,i)=>{
+        if(!it) return null;
+        const rawDate = (it.date || it.ymd || it.dueDate || it.due_ymd || '').toString().trim();
+        if(!rawDate) return null;
+        return {
+          idx: (it && Number(it.idx) > 0) ? Number(it.idx) : (i+1),
+          date: rawDate,
+          amount: Math.max(0, Number(it.amount)||0),
+          paid: Math.max(0, Number(it.paid)||0),
+          missed: !!it.missed
+        };
+      }).filter(Boolean);
+
+      const hasSched = schedule.length > 0;
+      const sum = hasSched ? schedule.reduce((s,it)=>s+(it.amount||0),0) : Math.max(0, Number(l.total)||0);
+      const count = hasSched ? schedule.length : (Number(l.count)||0) || (sum>0 ? 1 : 0);
+      const baseTotal = sum || Math.max(0, Number(l.total)||0);
+      const inst = (baseTotal && count) ? Math.round(baseTotal / count) : Math.round(Number(l.installment)||0);
+
+      // 스케줄이 하나도 없더라도 대출 자체는 유지 (헤더/요약은 보이게)
       out.loans.push({
         id: String(l.id||Math.random().toString(36).slice(2,10)),
         debtorId: String(l.debtorId),
-        total: sum || Number(l.total) || 0,
+        total: baseTotal,
         count,
-        installment: Math.round((sum || Number(l.total) || 0) / count) || 0,
-        startDate: schedule[0].date,
+        installment: inst,
+        startDate: hasSched ? schedule[0].date : (l.startDate || ''),
         freq: l.freq || 'daily',
         schedule,
         completed: !!l.completed
       });
     });
-  }catch(e){ console.warn('[sanitizeState] 실패', e); }
+}catch(e){ console.warn('[sanitizeState] 실패', e); }
   return out;
 }
 
