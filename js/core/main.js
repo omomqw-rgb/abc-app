@@ -594,13 +594,6 @@ function buildCalendar(year,month){
 
 
   // 채무상환(RepayPlan) 카드 렌더링
-  try{
-    if (typeof window.renderRepayCards === 'function') {
-      window.renderRepayCards(id);
-    }
-  }catch(e){
-    console.warn('[openDrawer] renderRepayCards failed', e);
-  }
 }
 
 /* ===== 공통 리프레시: 캘린더+드로워 동기화 유지 ===== */
