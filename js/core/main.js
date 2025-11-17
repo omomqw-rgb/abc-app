@@ -42,10 +42,36 @@ function load(){
       return { id:l.id||uid(), debtorId:l.debtorId, total, count, installment, startDate:l.startDate, freq:l.freq||'weekly', schedule, completed: !!l.completed };
     }) : [];
 
-state.repayPlans = Array.isArray(data.repayPlans) ? data.repayPlans.map(function(p){
-  var sc = Array.isArray(p.schedule) ? p.schedule.map(function(it,i){
-    return { idx: (it && Number(it.idx)>0)? Number(it.idx) : (i+1), date: String(it.date||''), amount: (it.amount===''||it.amount==null)? '' : Math.max(0, Number(it.amount)||0), missed: !!it.missed, settled: !!it.settled };
-  }) : [];
+
+state.repayPlans = Array.isArray(data.repayPlans) ? (function(rawPlans){
+  // 1) 기본 매핑
+  var mapped = rawPlans.map(function(p){
+    var sc = Array.isArray(p.schedule) ? p.schedule.map(function(it,i){
+      return {
+        idx: (it && Number(it.idx)>0) ? Number(it.idx) : (i+1),
+        date: String((it && it.date) || '').trim(),
+        amount: Math.max(0, Number(it && it.amount || 0)),
+        missed: !!(it && it.missed),
+        settled: !!(it && it.settled)
+      };
+    }).filter(function(it){ return it && it.date; }) : [];
+    return {
+      id: String(p.id||uid()),
+      debtorId: String(p.debtorId),
+      total: Math.max(0, Number(p.total)||0),
+      count: sc.length || Number(p.count)||0,
+      startDate: p.startDate || (sc[0] && sc[0].date) || '',
+      freq: p.freq || 'daily',
+      schedule: sc,
+      completed: !!p.completed
+    };
+  });
+
+  // 2) 고아 plan 자동삭제: 존재하지 않는 채무자(debtorId) 연결된 항목 제거
+  var validIds = new Set((state.debtors || []).map(function(d){ return String(d.id); }));
+  return mapped.filter(function(p){ return validIds.has(String(p.debtorId)); });
+})(data.repayPlans) : [];
+
   return { id: String(p.id||uid()), debtorId: String(p.debtorId), total: Math.max(0, Number(p.total)||0), count: Number(p.count||sc.length||0), startDate: p.startDate || (sc[0] && sc[0].date) || '', freq: p.freq || 'daily', schedule: sc, completed: !!p.completed };
 }) : [];
         const ui=data.ui||{};
@@ -125,45 +151,32 @@ function sanitizeState(raw){
         dmap.set(nd.id, nd); out.debtors.push(nd);
       }
     });
-    
     (Array.isArray(raw && raw.loans ? raw.loans : []) ? raw.loans : []).forEach(l=>{
       if(!l || !dmap.has(String(l.debtorId))) return;
       let schedule = Array.isArray(l.schedule) ? l.schedule.slice() : [];
-
-      // 날짜 필드 호환 처리: date / ymd / dueDate / due_ymd 등을 모두 허용
-      schedule = schedule.map((it,i)=>{
-        if(!it) return null;
-        const rawDate = (it.date || it.ymd || it.dueDate || it.due_ymd || '').toString().trim();
-        if(!rawDate) return null;
-        return {
-          idx: (it && Number(it.idx) > 0) ? Number(it.idx) : (i+1),
-          date: rawDate,
-          amount: Math.max(0, Number(it.amount)||0),
-          paid: Math.max(0, Number(it.paid)||0),
-          missed: !!it.missed
-        };
-      }).filter(Boolean);
-
-      const hasSched = schedule.length > 0;
-      const sum = hasSched ? schedule.reduce((s,it)=>s+(it.amount||0),0) : Math.max(0, Number(l.total)||0);
-      const count = hasSched ? schedule.length : (Number(l.count)||0) || (sum>0 ? 1 : 0);
-      const baseTotal = sum || Math.max(0, Number(l.total)||0);
-      const inst = (baseTotal && count) ? Math.round(baseTotal / count) : Math.round(Number(l.installment)||0);
-
-      // 스케줄이 하나도 없더라도 대출 자체는 유지 (헤더/요약은 보이게)
+      schedule = schedule.filter(it=>it && it.date).map((it,i)=>({
+        idx:i+1,
+        date:String(it.date),
+        amount:Math.max(0, Number(it.amount)||0),
+        paid:Math.max(0, Number(it.paid)||0),
+        missed:!!it.missed
+      }));
+      if(schedule.length===0) return;
+      const sum = schedule.reduce((s,it)=>s+(it.amount||0),0);
+      const count = schedule.length;
       out.loans.push({
         id: String(l.id||Math.random().toString(36).slice(2,10)),
         debtorId: String(l.debtorId),
-        total: baseTotal,
+        total: sum || Number(l.total) || 0,
         count,
-        installment: inst,
-        startDate: hasSched ? schedule[0].date : (l.startDate || ''),
+        installment: Math.round((sum || Number(l.total) || 0) / count) || 0,
+        startDate: schedule[0].date,
         freq: l.freq || 'daily',
         schedule,
         completed: !!l.completed
       });
     });
-}catch(e){ console.warn('[sanitizeState] 실패', e); }
+  }catch(e){ console.warn('[sanitizeState] 실패', e); }
   return out;
 }
 
@@ -208,34 +221,13 @@ function delDebtor
 }
 
 /* ===== 오른쪽 드로워 ===== */
-
 function aggByDebtor(id){
-  const loans = (state.loans || []).filter(l => String(l.debtorId) === String(id));
-  const plans = (state.repayPlans || []).filter(p => String(p.debtorId) === String(id));
-
-  // 대출 합계
-  const loanTotal = loans.reduce((s,l)=> s + Math.max(0, Number(l.total)||0), 0);
-  const loanPaid  = loans.reduce((s,l)=> s + (Array.isArray(l.schedule) ? l.schedule.reduce((ss,it)=> ss + Math.max(0, Number(it.paid)||0), 0) : 0), 0);
-
-  // 채권(RepayPlan) 합계 — settled 금액만 paid 로 인정
-  const claimTotal = plans.reduce((s,p)=> s + Math.max(0, Number(p.total)||0), 0);
-  const claimPaid  = plans.reduce((s,p)=> {
-    if(!p || !Array.isArray(p.schedule)) return s;
-    const pp = p.schedule.reduce((ss,it)=>{
-      if(!it) return ss;
-      const amt = Math.max(0, Number(it.amount)||0);
-      return ss + (it.settled ? amt : 0);
-    },0);
-    return s + pp;
-  }, 0);
-
-  const total = loanTotal + claimTotal;
-  const paid  = loanPaid + claimPaid;
-  const remain = Math.max(0, total - paid);
-
-  return { loans, repayPlans: plans, total, paid, remain };
+  const loans=state.loans.filter(l=>l.debtorId===id);
+  const total=loans.reduce((s,l)=>s+l.total,0);
+  const paid=loans.reduce((s,l)=>s+l.schedule.reduce((ss,it)=>ss+(it.paid||0),0),0);
+  const remain=Math.max(0,total-paid);
+  return {loans,total,paid,remain};
 }
-
 function openDrawer(id){
   state.ui.selectedDebtorId=id; save();
   const d=state.debtors.find(x=>x.id===id); if(!d) return;
@@ -248,17 +240,9 @@ function openDrawer(id){
     <div class="kpi">${d.note?('📝 '+d.note):'📝 메모 없음'}</div>`;
 
   const list=document.getElementById('drawerLoans'); list.innerHTML='';
-  const loans = Array.isArray(a.loans) ? a.loans : [];
-  const hasRepay = Array.isArray(a.repayPlans) && a.repayPlans.length>0;
+  if(a.loans.length===0){ list.innerHTML='<div class="note" style="padding:8px">대출이 없습니다.</div>'; return; }
 
-  // 대출도 없고 채권도 없으면 안내만 표시
-  if(loans.length===0 && !hasRepay){
-    list.innerHTML='<div class="note" style="padding:8px">대출이 없습니다.</div>';
-    return;
-  }
-
-  // 대출이 없는 경우에도 채권카드는 renderRepayCards에서 붙으므로 여기서 바로 return 하지 않음.
-// 정렬: 미완 먼저, 시작일 최신순
+  // 정렬: 미완 먼저, 시작일 최신순
   const loansSorted = a.loans.slice().sort((A,B)=>{
     const aDone = allPaid(A), bDone = allPaid(B);
     if(aDone!==bDone) return aDone - bDone; // 미완(0) 우선
@@ -318,11 +302,6 @@ function openDrawer(id){
     card.innerHTML = headerHtml + `<div class="sched-wrap" id="sched-${l.id}" style="display:${collapsed?'none':'block'}">${schedRows}</div>`;
     list.appendChild(card);
   });
-  // 채무상환(RepayPlan) 카드 렌더링
-  if (typeof window.renderRepayCards === 'function') {
-    try { window.renderRepayCards(id); } catch(e) { console.warn('[renderRepayCards]', e); }
-  }
-
 }
 
 /* ===== 채무자 표 ===== */
@@ -558,42 +537,8 @@ function buildCalendar(year,month){
       items.appendChild(pill);
     });
 
-    // RepayPlan(채권) pill overlay
-    const repayDues = [];
-    (state.repayPlans || []).forEach(p=>{
-      if(p && p.completed) return;
-      const sc = Array.isArray(p && p.schedule) ? p.schedule : [];
-      sc.forEach(it=>{
-        if(!it || !it.date) return;
-        if(it.date !== yyyyMmDd) return;
-        const debtor = (state.debtors || []).find(d=> String(d.id) === String(p.debtorId));
-        const who = debtor ? debtor.name : '채무자';
-        const amt = Math.max(0, Number(it.amount) || 0);
-        const settled = !!it.settled;
-        const overdue = (!settled && (it.missed || (new Date(it.date) < today)));
-        const cls = settled ? 'paid' : (overdue ? 'overdue' : 'upcoming');
-        const toRecv = settled ? 0 : amt;
-        repayDues.push({ plan:p, it, who, amt, settled, overdue, cls, toRecv });
-      });
-    });
-    repayDues.sort((a,b)=> a.who.localeCompare(b.who,'ko'));
-
-    repayDues.forEach(x=>{
-      const pill = document.createElement('div');
-      pill.className = 'pill ' + x.cls;
-      pill.dataset.planId = x.plan.id;
-      pill.dataset.rpIdx = x.it.idx;
-      pill.title = `[상환] 회차금액 ${KRW(x.amt)} · 상태 ` + (x.settled ? '완납' : (x.overdue ? '미납' : '미입금'));
-      pill.innerHTML = `<span class="who">${x.who}</span><span class="amt">${KRW(x.toRecv)}</span>`;
-      items.appendChild(pill);
-    });
-
-
     cell.appendChild(dateDiv); cell.appendChild(items); grid.appendChild(cell);
   }
-
-
-  // 채무상환(RepayPlan) 카드 렌더링
 }
 
 /* ===== 공통 리프레시: 캘린더+드로워 동기화 유지 ===== */
