@@ -33,6 +33,11 @@ document.addEventListener('click', function(e){
 }, true);
 
 (function(){
+    // 대출쪽 AUTO_COLLAPSE_DONE 플래그와 호환: 없으면 기본값 false
+    if (typeof window.AUTO_COLLAPSE_DONE === 'undefined') {
+      window.AUTO_COLLAPSE_DONE = false;
+    }
+
   try{
     if(!window.state) window.state = { debtors:[], loans:[], ui:{} };
     if(!Array.isArray(state.repayPlans)) state.repayPlans = [];
