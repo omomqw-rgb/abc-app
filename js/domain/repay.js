@@ -63,12 +63,10 @@ document.addEventListener('click', function(e){
       window.sanitizeState = function(raw){
         var out = __sanitize(raw);
 
-
         try{
           if (Array.isArray(raw && raw.repayPlans)) {
             out.repayPlans = raw.repayPlans.map(function(p){
               var sc = Array.isArray(p.schedule) ? p.schedule.map(function(it,i){
-                if(!it) return null;
                 return {
                   idx: (it && Number(it.idx) > 0) ? Number(it.idx) : (i+1),
                   date: String((it && (it.date || it.ymd || it.dueDate || it.due_ymd)) || '').trim(),
@@ -88,10 +86,6 @@ document.addEventListener('click', function(e){
                 completed: !!p.completed
               };
             });
-
-            // 고아 plan 자동삭제: sanitize 시점에서도 debtor가 없는 항목 제거
-            var validIds = new Set((out.debtors || []).map(function(d){ return String(d.id); }));
-            out.repayPlans = out.repayPlans.filter(function(p){ return validIds.has(String(p.debtorId)); });
           }
         }catch(e){ console.warn('[sanitize repays]', e); }
         return out;
