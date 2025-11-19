@@ -5,7 +5,7 @@
 <link href="data:," rel="icon"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>대부 코어 v0.6.5 — 캘린더 잔액반영 · 스케줄 글자색 · 월단위 제거</title>
+<title>대부 코어 v0.6.7 — 캘린더 잔액반영 · 스케줄 글자색 · 월단위 제거</title>
 <link rel="stylesheet" href="css/style_001.css"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="css/style_002.css"/>
@@ -23,9 +23,9 @@
 <!-- Toast will be loaded via the module bootstrap -->
 <div class="app">
 <div class="topbar">
-<div class="brand">💼 대부 코어 v0.6.5</div>
+<div class="brand">💼 대부 코어 v0.6.7</div>
 <button class="tab active" data-tab="calendar">전체관리(캘린더)</button>
-<button class="tab" data-tab="debtors">채무자 관리</button><button class="tab" data-tab="stats">통계</button>
+<button class="tab" data-tab="debtors">Monitoring</button><button class="tab" data-tab="stats">통계</button><button class="tab" data-tab="report">Report</button>
 <div class="spacer"></div>
 <button class="btn" id="btnExport">백업 내보내기</button>
 <button class="btn" id="btnImport">백업 불러오기</button>
@@ -34,6 +34,7 @@
 <button class="btn" id="btnCloudLoad">클라우드 불러오기</button>
 <input accept="application/json" id="importFile" style="display:none" type="file"/>
 </div>
+
 <!-- LEFT -->
 <aside class="side">
 <div class="head">
@@ -66,10 +67,10 @@
         색상: <b style="color:#2ecc71">초록=완납</b> · <b style="color:#ffd048">노랑=부분</b> · <b style="color:#ff5252">빨강=미납</b> · <b>흰색=도래전</b> | 오늘=빨간 테두리
       </div>
 </section>
-<!-- 채무자 관리 -->
+<!-- Monitoring (D-1 / D-day / 미납 리스트) -->
 <section class="card" id="view-debtors" style="display:none">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-<h3 style="margin:0">채무자 관리</h3>
+<h3 style="margin:0">Monitoring</h3>
 <!-- 가운데 +대출 등록 버튼 제거 -->
 </div>
 <!-- 알림 보드 -->
@@ -88,10 +89,18 @@
 <button class="stats-tab active" data-stats="loan">대출</button>
 <button class="stats-tab" data-stats="claim">채권</button>
 <button class="stats-tab" data-stats="sum">합계</button>
-<button class="stats-tab" data-stats="roi">수익률</button>
 </div>
 <div id="statsBody"></div>
 </section>
+<section class="card" id="view-report" style="display:none">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<h3 style="margin:0">Report</h3>
+</div>
+<div id="reportKpi"></div>
+<div id="reportStatus"></div>
+<div id="reportSummary"></div>
+</section>
+
 </main>
 <!-- RIGHT: Drawer -->
 <aside class="drawer">

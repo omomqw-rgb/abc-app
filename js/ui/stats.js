@@ -228,6 +228,136 @@ function renderStats(kind){
   body.innerHTML = html;
 }
 
+
+
+function renderReport(){
+  var kpiBox = document.getElementById('reportKpi');
+  var statusBox = document.getElementById('reportStatus');
+  var summaryBox = document.getElementById('reportSummary');
+  if(!kpiBox || !statusBox || !summaryBox) return;
+
+  var loans = (window.state && Array.isArray(state.loans)) ? state.loans : [];
+  if(!loans.length){
+    kpiBox.innerHTML = '<p style="margin:0;font-size:12px;color:var(--muted)">등록된 대출 데이터가 없습니다.</p>';
+    statusBox.innerHTML = '';
+    summaryBox.innerHTML = '';
+    return;
+  }
+
+  var totalNominal = 0;
+  var totalPaid = 0;
+  var totalRemain = 0;
+  var totalCount = loans.length;
+
+  var doneCount = 0;
+  var progressCount = 0;
+  var overdueCount = 0;
+
+  var doneNominal = 0;
+  var progressNominal = 0;
+  var overdueNominal = 0;
+
+  loans.forEach(function(l){
+    var tot = Math.max(0, Number(l.total)||0);
+    var sched = Array.isArray(l.schedule) ? l.schedule : [];
+    var paid = sched.reduce(function(s,it){
+      if(!it) return s;
+      var v = Number(it.paid)||0;
+      return s + Math.max(0,v);
+    },0);
+    var remain = Math.max(0, tot - paid);
+    totalNominal += tot;
+    totalPaid += paid;
+    totalRemain += remain;
+
+    var done = !!l.completed || paid >= tot - 1e-6;
+    var hasMissed = sched.some(function(it){ return it && it.missed; });
+
+    if(done){
+      doneCount += 1;
+      doneNominal += tot;
+    }else if(hasMissed){
+      overdueCount += 1;
+      overdueNominal += tot;
+    }else{
+      progressCount += 1;
+      progressNominal += tot;
+    }
+  });
+
+  var totalExpected = totalNominal;
+  var recoveryRate = totalExpected > 0 ? Math.round((totalPaid / totalExpected) * 1000) / 10 : 0;
+
+  // KPI 영역
+  var kpiHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+  function kpiCard(label, value, sub){
+    return '<div style="flex:1 1 160px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:140px">'
+      + '<div style="font-size:11px;color:var(--muted);margin-bottom:2px">'+label+'</div>'
+      + '<div style="font-size:16px;font-weight:700">'+value+'</div>'
+      + (sub ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+sub+'</div>' : '')
+      + '</div>';
+  }
+  kpiHtml += kpiCard('총 상환채무(명목)', (totalExpected||0).toLocaleString('ko-KR') + '원', '대출 총액 기준');
+  kpiHtml += kpiCard('기납입 합계', (totalPaid||0).toLocaleString('ko-KR') + '원', '');
+  kpiHtml += kpiCard('잔여 예정액', (totalRemain||0).toLocaleString('ko-KR') + '원', '');
+  kpiHtml += kpiCard('회수율', (recoveryRate||0) + '%', '기납입 / 총 상환채무');
+  kpiHtml += '</div>';
+  kpiBox.innerHTML = kpiHtml;
+
+  // 상태 요약
+  var statusTotalNominal = doneNominal + progressNominal + overdueNominal;
+  function ratio(part){ return statusTotalNominal>0 ? Math.round(part/statusTotalNominal*1000)/10 : 0; }
+  var statusHtml = '<div style="margin-bottom:12px">'
+    + '<div style="font-size:12px;font-weight:600;margin-bottom:4px">포트폴리오 상태</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + '<thead><tr>'
+      + '<th style="text-align:left;border-bottom:1px solid var(--line);padding:4px 6px">상태</th>'
+      + '<th style="text-align:right;border-bottom:1px solid var(--line);padding:4px 6px">건수</th>'
+      + '<th style="text-align:right;border-bottom:1px solid var(--line);padding:4px 6px">명목금</th>'
+      + '<th style="text-align:right;border-bottom:1px solid var(--line);padding:4px 6px">비율</th>'
+    + '</tr></thead><tbody>';
+  statusHtml += '<tr>'
+    + '<td style="padding:4px 6px">완납</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+doneCount.toLocaleString('ko-KR')+'</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+doneNominal.toLocaleString('ko-KR')+'원</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+ratio(doneNominal)+'%</td>'
+    + '</tr>';
+  statusHtml += '<tr>'
+    + '<td style="padding:4px 6px">진행</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+progressCount.toLocaleString('ko-KR')+'</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+progressNominal.toLocaleString('ko-KR')+'원</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+ratio(progressNominal)+'%</td>'
+    + '</tr>';
+  statusHtml += '<tr>'
+    + '<td style="padding:4px 6px">미납</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+overdueCount.toLocaleString('ko-KR')+'</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+overdueNominal.toLocaleString('ko-KR')+'원</td>'
+    + '<td style="padding:4px 6px;text-align:right">'+ratio(overdueNominal)+'%</td>'
+    + '</tr>';
+  statusHtml += '</tbody></table></div>';
+  statusBox.innerHTML = statusHtml;
+
+  // Summary 표
+  var summaryHtml = '<div>'
+    + '<div style="font-size:12px;font-weight:600;margin-bottom:4px">요약</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    + '<tbody>';
+  function row(label, value){
+    return '<tr>'
+      + '<td style="padding:4px 6px;border-bottom:1px solid var(--line)">'+label+'</td>'
+      + '<td style="padding:4px 6px;border-bottom:1px solid var(--line);text-align:right">'+value+'</td>'
+      + '</tr>';
+  }
+  summaryHtml += row('총 대출(명목)', totalNominal.toLocaleString('ko-KR') + '원');
+  summaryHtml += row('기납입 합계', totalPaid.toLocaleString('ko-KR') + '원');
+  summaryHtml += row('잔여 예정액', totalRemain.toLocaleString('ko-KR') + '원');
+  summaryHtml += row('대출 건수', totalCount.toLocaleString('ko-KR') + '건');
+  summaryHtml += row('완납 / 진행 / 미납 건수', doneCount+' / '+progressCount+' / '+overdueCount);
+  summaryHtml += row('회수율', (recoveryRate||0) + '%');
+  summaryHtml += '</tbody></table></div>';
+  summaryBox.innerHTML = summaryHtml;
+}
+
 // stats subtab click
 document.addEventListener('click', function(e){
   var b = e.target && e.target.closest('.stats-tab'); if(!b) return;
